@@ -1,4 +1,4 @@
-use futures::sync::oneshot;
+    use futures::sync::oneshot;
 use futures::{future, Future};
 use std::borrow::Cow;
 use std::io::{Read, Seek};
@@ -7,6 +7,10 @@ use std::sync::mpsc::{RecvError, TryRecvError};
 use std::thread;
 use std;
 use vorbis::{self, VorbisError};
+use std::io::prelude::*;
+use std::fs::File;
+use std::path::Path;
+use std::error::Error;
 
 use audio_backend::Sink;
 use audio_decrypt::AudioDecrypt;
@@ -15,6 +19,8 @@ use metadata::{FileFormat, Track};
 use session::{Bitrate, Session};
 use mixer::AudioFilter;
 use util::{self, SpotifyId, Subfile};
+
+use http_player::Httpplayer;
 
 #[derive(Clone)]
 pub struct Player {
@@ -240,6 +246,7 @@ impl PlayerInternal {
                                 decoder: decoder,
                                 end_of_track: end_of_track,
                             };
+                            Httpplayer::new().sendStatus("play".to_string(), position as i64);
                         } else {
                             if self.state.is_playing() {
                                 self.run_onstop();
@@ -249,6 +256,7 @@ impl PlayerInternal {
                                 decoder: decoder,
                                 end_of_track: end_of_track,
                             };
+                            Httpplayer::new().sendStatus("pause".to_string(), position as i64);
                         }
                     }
 
@@ -264,7 +272,7 @@ impl PlayerInternal {
             PlayerCommand::Seek(position) => {
                 if let Some(decoder) = self.state.decoder() {
                     match vorbis_time_seek_ms(decoder, position as i64) {
-                        Ok(_) => (),
+                        Ok(_) => Httpplayer::new().sendStatus("seek".to_string(), position as i64),
                         Err(err) => error!("Vorbis error: {:?}", err),
                     }
                 } else {
@@ -278,6 +286,7 @@ impl PlayerInternal {
 
                     self.run_onstart();
                     self.sink.start().unwrap();
+                    Httpplayer::new().sendStatus("play".to_string(), -1);
                 } else {
                     warn!("Player::play called from invalid state");
                 }
@@ -289,12 +298,14 @@ impl PlayerInternal {
 
                     self.sink.stop().unwrap();
                     self.run_onstop();
+                    Httpplayer::new().sendStatus("pause".to_string(), -1);
                 } else {
                     warn!("Player::pause called from invalid state");
                 }
             }
 
             PlayerCommand::Stop => {
+                Httpplayer::new().sendStatus("stop".to_string(), -1);
                 match self.state {
                     PlayerState::Playing { .. } => {
                         self.sink.stop().unwrap();
@@ -341,7 +352,7 @@ impl PlayerInternal {
     }
 
     fn load_track(&self, track_id: SpotifyId, position: i64) -> Option<Decoder> {
-        let track = self.session.metadata().get::<Track>(track_id).wait().unwrap();
+        let track: Track = self.session.metadata().get::<Track>(track_id).wait().unwrap();
 
         info!("Loading track \"{}\"", track.name);
 
@@ -381,6 +392,8 @@ impl PlayerInternal {
         }
 
         info!("Track \"{}\" loaded", track.name);
+        let tTrack = track.clone();
+        Httpplayer::new().send(self.session.clone(), tTrack.into_owned());
 
         Some(decoder)
     }
