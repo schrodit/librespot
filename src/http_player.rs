@@ -1,4 +1,5 @@
 use std::thread;
+use std::panic;
 use std::str::{self};
 
 use std::io::{self, Write};
@@ -17,12 +18,6 @@ use iron::prelude::*;
 use iron::status;
 use router::Router;
 
-#[derive(Serialize, Deserialize)]
-struct sArtist {
-    id: String,
-    name: String
-}
-
 #[derive(Debug, Clone)]
 pub struct Httpplayer {
     url: String,
@@ -37,29 +32,6 @@ impl Httpplayer {
         }
     }
 
-    pub fn startServer(&self, player: &Player) -> () {
-        let self_clone = self.clone();
-        let player_clone = player.clone();
-        thread::spawn(move || {
-            println!("Server started..");
-            Iron::new(move |request: &mut Request| {
-                match request.url.query() {
-                    Some(cmd) => {
-                        println!("{:?}", cmd);
-                        // match cmd {
-                        //     "play" => player_clone.play(),
-                        //     "pause" => player_clone.pause(),
-                        //     _ => (),
-                        // }
-                    }
-                    None => ()
-                }
-                println!("{:?}", request.url.query());
-                Ok(Response::with((status::Ok, "success!")))
-            }).http(self_clone.server).unwrap();
-        });
-    }
-
     pub fn sendStatus(&self, status: String, position: i64) -> () {
          let res = json!({
             "status": &status,
@@ -68,43 +40,20 @@ impl Httpplayer {
 
         let self_clone = self.clone();
         thread::spawn(move || {
-            println!("thread started");
             self_clone.sendJson(res.to_string());
+            println!("Update Status to {:?}", &status);
         });
     }
     pub fn send(&self, session: Session, track: Track) -> () {
-        // let album = session.metadata().get::<Album>(track.album).wait().unwrap();
-        // let mut covers: Vec<String> = Vec::new();
-        // for cover in album.covers {
-        //     covers.push(cover.to_base16());
-        // }
-        // let mut artists: Vec<sArtist> = Vec::new();
-        // for id in track.artists {
-        //     let artist = session.metadata().get::<Artist>(id).wait().unwrap();
-        //     let sartist = sArtist {
-        //         id: artist.id.to_base16(),
-        //         name: artist.name
-        //     };
-        //     artists.push(sartist);
-        // }
-
         let res = json!({
             "id": &track.id.to_base16(),
             "raw": &track.id.to_raw(),
-            // "name": &track.name,
-            // "available": &track.available,
-            // "album": {
-            //         "id": &album.id.to_base16(),
-            //         "name": &album.name,
-            //         "cover": covers,
-            // },
-            // "artists": artists,
         });
 
         let self_clone = self.clone();
         thread::spawn(move || {
             self_clone.sendJson(res.to_string());
-            println!("thread finished");
+            println!("Send track {:?}", &track.name);
         });
     }
 
@@ -133,24 +82,27 @@ impl Httpplayer {
             return;
         }
 
-        println!("Url: {}", url);
+            let mut core = tokio_core::reactor::Core::new().unwrap();
+            let handle = core.handle();
+            let client = Client::new(&handle);
 
+            let work = client.get(url);
+            // .and_then(|res| {
+            //     println!("Response: {}", res.status());
 
-        let mut core = tokio_core::reactor::Core::new().unwrap();
-        let handle = core.handle();
-        let client = Client::new(&handle);
+            //     res.body().for_each(|chunk| {
+            //         io::stdout().write_all(&chunk).map_err(From::from)
+            //     })
+            // }).map(|_| {
+            //     println!("\n\nDone.");
+            // });
 
-        let work = client.get(url).and_then(|res| {
-            println!("Response: {}", res.status());
+            let mut err = "Failed reach ".to_owned();
+            err.push_str(paramurl.as_str());
 
-            res.body().for_each(|chunk| {
-                io::stdout().write_all(&chunk).map_err(From::from)
-            })
-        }).map(|_| {
-            println!("\n\nDone.");
-        });
-
-        core.run(work).unwrap();
+            core.run(work)
+                .ok()
+                .expect(err.as_str());
     }
 
 }
