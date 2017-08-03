@@ -32,6 +32,29 @@ impl Httpplayer {
         }
     }
 
+    pub fn startServer(&self, player: &Player) -> () {
+        let self_clone = self.clone();
+        let player_clone = player.clone();
+        thread::spawn(move || {
+            println!("Server started..");
+            Iron::new(move |request: &mut Request| {
+                match request.url.query() {
+                    Some(cmd) => {
+                        println!("{:?}", cmd);
+                        // match cmd {
+                        //     "play" => player_clone.play(),
+                        //     "pause" => player_clone.pause(),
+                        //     _ => (),
+                        // }
+                    }
+                    None => ()
+                }
+                println!("{:?}", request.url.query());
+                Ok(Response::with((status::Ok, "success!")))
+            }).http(self_clone.server).unwrap();
+        });
+    }
+
     pub fn sendStatus(&self, status: String, position: i64) -> () {
          let res = json!({
             "status": &status,
