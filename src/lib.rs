@@ -34,6 +34,9 @@ extern crate tokio_proto;
 extern crate url;
 extern crate uuid;
 
+extern crate iron;
+extern crate router;
+
 pub extern crate librespot_protocol as protocol;
 
 #[cfg(not(feature = "with-tremor"))]
@@ -70,5 +73,6 @@ pub mod util;
 pub mod version;
 pub mod mixer;
 pub mod keymaster;
+pub mod http_player;
 
 include!(concat!(env!("OUT_DIR"), "/lib.rs"));
