@@ -246,7 +246,7 @@ impl PlayerInternal {
                                 decoder: decoder,
                                 end_of_track: end_of_track,
                             };
-                            Httpplayer::new().sendStatus("play".to_string(), position as i64);
+                            Httpplayer::new().send_status("play".to_string(), position as i64);
                         } else {
                             if self.state.is_playing() {
                                 self.run_onstop();
@@ -256,7 +256,7 @@ impl PlayerInternal {
                                 decoder: decoder,
                                 end_of_track: end_of_track,
                             };
-                            Httpplayer::new().sendStatus("pause".to_string(), position as i64);
+                            Httpplayer::new().send_status("pause".to_string(), position as i64);
                         }
                     }
 
@@ -272,7 +272,7 @@ impl PlayerInternal {
             PlayerCommand::Seek(position) => {
                 if let Some(decoder) = self.state.decoder() {
                     match vorbis_time_seek_ms(decoder, position as i64) {
-                        Ok(_) => Httpplayer::new().sendStatus("seek".to_string(), position as i64),
+                        Ok(_) => Httpplayer::new().send_status("seek".to_string(), position as i64),
                         Err(err) => error!("Vorbis error: {:?}", err),
                     }
                 } else {
@@ -286,7 +286,7 @@ impl PlayerInternal {
 
                     self.run_onstart();
                     self.sink.start().unwrap();
-                    Httpplayer::new().sendStatus("play".to_string(), -1);
+                    Httpplayer::new().send_status("play".to_string(), -1);
                 } else {
                     warn!("Player::play called from invalid state");
                 }
@@ -298,14 +298,14 @@ impl PlayerInternal {
 
                     self.sink.stop().unwrap();
                     self.run_onstop();
-                    Httpplayer::new().sendStatus("pause".to_string(), -1);
+                    Httpplayer::new().send_status("pause".to_string(), -1);
                 } else {
                     warn!("Player::pause called from invalid state");
                 }
             }
 
             PlayerCommand::Stop => {
-                Httpplayer::new().sendStatus("stop".to_string(), -1);
+                Httpplayer::new().send_status("stop".to_string(), -1);
                 match self.state {
                     PlayerState::Playing { .. } => {
                         self.sink.stop().unwrap();
@@ -393,7 +393,7 @@ impl PlayerInternal {
 
         info!("Track \"{}\" loaded", track.name);
         let tTrack = track.clone();
-        Httpplayer::new().send(self.session.clone(), tTrack.into_owned());
+        Httpplayer::new().send(tTrack.into_owned());
 
         Some(decoder)
     }
