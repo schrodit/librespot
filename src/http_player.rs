@@ -5,6 +5,11 @@ use hyper::{self, Client};
 use tokio_core;
 
 use metadata::{Track};
+use player::Player;
+
+use iron::{Iron};
+use iron::prelude::*;
+use iron::status;
 
 #[derive(Debug, Clone)]
 pub struct Httpplayer {
@@ -29,11 +34,11 @@ impl Httpplayer {
                 match request.url.query() {
                     Some(cmd) => {
                         println!("{:?}", cmd);
-                        // match cmd {
-                        //     "play" => player_clone.play(),
-                        //     "pause" => player_clone.pause(),
-                        //     _ => (),
-                        // }
+                        match cmd {
+                            "play" => player_clone.play(),
+                            "pause" => player_clone.pause(),
+                            _ => (),
+                        }
                     }
                     None => ()
                 }
