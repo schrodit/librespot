@@ -1,22 +1,10 @@
 use std::thread;
-use std::panic;
 use std::str::{self};
-
-use std::io::{self, Write};
-
-use futures::Future;
-use futures::stream::Stream;
 
 use hyper::{self, Client};
 use tokio_core;
 
 use metadata::{Track};
-use session::Session;
-use player::Player;
-
-use iron::prelude::*;
-use iron::status;
-use router::Router;
 
 #[derive(Debug, Clone)]
 pub struct Httpplayer {
@@ -55,7 +43,7 @@ impl Httpplayer {
         });
     }
 
-    pub fn sendStatus(&self, status: String, position: i64) -> () {
+    pub fn send_status(&self, status: String, position: i64) -> () {
          let res = json!({
             "status": &status,
             "position": position,
@@ -63,11 +51,11 @@ impl Httpplayer {
 
         let self_clone = self.clone();
         thread::spawn(move || {
-            self_clone.sendJson(res.to_string());
+            self_clone.send_json(res.to_string());
             println!("Update Status to {:?}", &status);
         });
     }
-    pub fn send(&self, session: Session, track: Track) -> () {
+    pub fn send(&self, track: Track) -> () {
         let res = json!({
             "id": &track.id.to_base16(),
             "raw": &track.id.to_raw(),
@@ -75,12 +63,12 @@ impl Httpplayer {
 
         let self_clone = self.clone();
         thread::spawn(move || {
-            self_clone.sendJson(res.to_string());
+            self_clone.send_json(res.to_string());
             println!("Send track {:?}", &track.name);
         });
     }
 
-    fn sendJson(&self, json: String) -> () {
+    fn send_json(&self, json: String) -> () {
         let mut paramurl = json;
         paramurl = paramurl.replace("{", "%7B");
         paramurl = paramurl.replace("}", "%7D");
@@ -128,10 +116,4 @@ impl Httpplayer {
                 .expect(err.as_str());
     }
 
-}
-
-
-fn handler(request: &mut Request) -> IronResult<Response> {
-    println!("{:?}", request.url.query());
-    Ok(Response::with((status::Ok, "success!")))
 }
