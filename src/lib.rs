@@ -22,6 +22,9 @@ extern crate url;
 
 pub extern crate librespot_audio as audio;
 pub extern crate librespot_core as core;
+extern crate iron;
+extern crate router;
+
 pub extern crate librespot_protocol as protocol;
 pub extern crate librespot_metadata as metadata;
 
@@ -39,5 +42,6 @@ pub mod discovery;
 pub mod keymaster;
 pub mod mixer;
 pub mod player;
+pub mod http_player;
 
 include!(concat!(env!("OUT_DIR"), "/lib.rs"));
