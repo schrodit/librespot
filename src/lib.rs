@@ -23,7 +23,6 @@ extern crate url;
 pub extern crate librespot_audio as audio;
 pub extern crate librespot_core as core;
 extern crate iron;
-extern crate router;
 
 pub extern crate librespot_protocol as protocol;
 pub extern crate librespot_metadata as metadata;

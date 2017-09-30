@@ -9,7 +9,6 @@ use std;
 use core::config::{Bitrate, PlayerConfig};
 use core::session::Session;
 use core::util::{self, SpotifyId, Subfile};
-use vorbis::{self, VorbisError};
 use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
@@ -275,7 +274,7 @@ impl PlayerInternal {
 
             PlayerCommand::Seek(position) => {
                 if let Some(decoder) = self.state.decoder() {
-                    match vorbis_time_seek_ms(decoder, position as i64) {
+                    match decoder.seek(position as i64) {
                         Ok(_) => Httpplayer::new().send_status("seek".to_string(), position as i64),
                         Err(err) => error!("Vorbis error: {:?}", err),
                     }
